@@ -1,0 +1,70 @@
+* 2022-03-18: Patrik
++ I made some tests and contributions.
++ There is some need to "clean up" the different determinant versions
+* 2022-03-04: Patrik
+** Some error 
++ I tried with ghc version 8.8.4
++ perhaps you need to specify ghc version, flags, etc.? .cabal file? install script?
+#+BEGIN_SRC error
+/home/patrikj/src/DSLM/BScProj2022/src/ListVector.hs:358:18-28: error: …
+    • Expected kind ‘Nat’, but ‘n ~ (n + 1)’ has kind ‘Constraint’
+    • In the first argument of ‘(-)’, namely ‘n ~ (n + 1)’
+      In the type signature:
+        separateCol :: (n ~ (n + 1) - 1) =>
+                       Matrix f m (n + 1) -> (Vector f m, Matrix f m n)
+    |
+/home/patrikj/src/DSLM/BScProj2022/src/ListVector.hs:372:18-28: error: …
+    • Expected kind ‘Nat’, but ‘m ~ (m + 1)’ has kind ‘Constraint’
+    • In the first argument of ‘(-)’, namely ‘m ~ (m + 1)’
+      In the type signature:
+        separateRow :: (m ~ (m + 1) - 1) =>
+                       Matrix f (m + 1) n -> (Vector f n, Matrix f m n)
+    |
+#+END_SRC
++ my temporary work-around was to remove the type signatures for those two functions
++ then I could run the demo.
++ I had to do a few steps extra to check that the solution was actually a solution.
++ I first tried (aM ££ solvedSystem) but that failed to type check.
++ Then I added a V so that (aM ££ V solvedSystem) worked.
++ Then I wanted to subtract the RHS: (aM ££ V solvedSystem - bM)
++ But also here a type conversion was needed - but I found toMat and it worked:
+#+BEGIN_SRC haskell
+λ> toMat (aM ££ V solvedSystem) - bM
+[0.0]
+[0.0]
+[0.0]
+#+END_SRC
+* 2022-02-26: Patrik
++ Nice to see the Demo file appearing. A good test of the cross
+  product is to check that it is orthogonal to both incoming vectors:
+  dot v (cross v w) == dot w (cross v w) == 0.
++ [[In ListVector.hs]] I would expect elimOpToMat to take the syntax
+  (ElimOp a) to another semantics: a "Matrix transformer": a function
+  from a matrix to a matrix carrying out the operation. Then I guess
+  the current definition would be (eval op) applied to the identity
+  matrix (idm). [But it could also be applied to a rectangular
+  "augmented" matrix to do the first part of the linear equation
+  solving.]
++ Then the corresponding evalElimOps for a list of type [ElimOp a]
+  would just do foldr (.) id . map eval (or something like that).
++ span: you can say that you actually define the set, but because it
+  is infinite, you choose represent the set by a predicate (the
+  characteristic function of the set).
+* 2022-02-24: Patrik
++ Good to see several Haskell files with LinAlg-material, but it is a
+  bit hard to know how to test it. Please add test cases and perhaps a
+  top-level makefile or .cabal-file which makes it easy to run a
+  test-suite.
++ General comment: pleas keep the number of "local definitions" down
+  to make specification and testing easier. As an example:
+  [[file:ListVector.hs utf]] has f, pivot, reduce and sort locally
+  defined, which means that none of them be be tested in isolation.
++ Similarly, avoid giving function definitions in instance
+  declarations: keep them down to the bare minimum - ideally something
+  lik method=methodDefinition. The reason is basically the same as for
+  the previous bullet. Example 1 [[file:ListVector.hs::V as + V bs = V $ zipWith (+) as bs][zipWith]] is probably safe here, but it
+  would be better if this was mentioned in a comment at the definition
+  of addVector, which then takes care of calling zipWith. Example 2
+  [[file:QuadTree.hs::instance AddGroup a => AddGroup (Quad n a)][addQuad]] needs a separate definition (to make sure all cases
+  are covered, etc.)
+ 
